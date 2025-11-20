@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-// Config struct to hold environment configuration
+// Config struct holds environment variables
 type Config struct {
 	DBUser     string
 	DBPassword string
@@ -20,13 +20,11 @@ type Config struct {
 	DBPort     string
 }
 
-// Global config variable
+// Global variables
 var C *Config
-
-// Global DB connection
 var DB *gorm.DB
 
-// LoadConfig loads environment variables into C
+// LoadConfig loads DB configuration from environment variables
 func LoadConfig() {
 	C = &Config{
 		DBUser:     os.Getenv("DB_USER"),
@@ -41,9 +39,8 @@ func LoadConfig() {
 	}
 }
 
-// InitDB initializes the database connection
+// InitDB initializes the global database connection
 func InitDB() {
-	// Load config if not already loaded
 	if C == nil {
 		LoadConfig()
 	}
@@ -58,15 +55,15 @@ func InitDB() {
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
-		log.Fatalf("[error] failed to initialize database, got error %v", err)
+		log.Fatalf("failed to connect to database: %v", err)
 	}
 
 	sqlDB, err := DB.DB()
 	if err != nil {
-		log.Fatalf("[error] failed to get database object, got error %v", err)
+		log.Fatalf("failed to get database object: %v", err)
 	}
 
-	// Optional: configure connection pool
+	// Optional connection pool configuration
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)

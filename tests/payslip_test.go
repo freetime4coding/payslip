@@ -15,8 +15,8 @@ import (
 	"gorm.io/gorm"
 
 	"payslip-system/config"
-	"payslip-system/models"
 	"payslip-system/handlers"
+	"payslip-system/models"
 )
 
 // setupTestDB initializes a separate test database
@@ -25,7 +25,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	os.Setenv("APP_ENV", "test")
 	config.LoadConfig()
 
-	// Use a dedicated test DB (create this in PostgreSQL beforehand)
+	// Dedicated test DB name
 	testDBName := "payslipdb_test"
 
 	dsn := fmt.Sprintf(
@@ -38,7 +38,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("failed to connect PostgreSQL for tests: %v", err)
 	}
 
-	// Clean DB: drop & migrate table
+	// Clean DB before each test
 	db.Migrator().DropTable(&models.Payslip{})
 	db.AutoMigrate(&models.Payslip{})
 
@@ -47,7 +47,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-// setupRouter returns a Gin router with handlers registered
+// setupRouter returns a Gin router with handlers
 func setupRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.Default()
@@ -56,7 +56,7 @@ func setupRouter() *gin.Engine {
 	return r
 }
 
-// TestCreatePayslip tests creating a new payslip and redirecting to /payslip/{id}
+// TestCreatePayslip tests creating a new payslip and redirect
 func TestCreatePayslip(t *testing.T) {
 	setupTestDB(t)
 	router := setupRouter()
@@ -68,18 +68,15 @@ func TestCreatePayslip(t *testing.T) {
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	// Expect redirect 302
 	if w.Code != http.StatusFound {
 		t.Fatalf("expected 302 redirect, got %d", w.Code)
 	}
 
-	// Check redirect location contains /payslip/{id}
 	location := w.Header().Get("Location")
 	if !strings.HasPrefix(location, "/payslip/") {
 		t.Fatalf("expected redirect to /payslip/{id}, got %s", location)
 	}
 
-	// Check DB entry exists
 	var count int64
 	config.DB.Model(&models.Payslip{}).Count(&count)
 	if count != 1 {
@@ -91,7 +88,6 @@ func TestCreatePayslip(t *testing.T) {
 func TestGetAllPayslips(t *testing.T) {
 	setupTestDB(t)
 
-	// Insert a test payslip
 	config.DB.Create(&models.Payslip{
 		EmployeeName:       "Tester",
 		AnnualSalary:       120000,
@@ -106,12 +102,10 @@ func TestGetAllPayslips(t *testing.T) {
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	// Expect 200 OK
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200 OK, got %d", w.Code)
 	}
 
-	// Parse JSON response
 	var result []models.Payslip
 	err := json.Unmarshal(w.Body.Bytes(), &result)
 	if err != nil {
