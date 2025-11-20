@@ -27,9 +27,9 @@ func CreatePayslip(c *gin.Context) {
 	payslip := models.Payslip{
 		EmployeeName:       name,
 		AnnualSalary:       salary,
-		GrossMonthlyIncome: grossMonthly,
-		MonthlyIncomeTax:   monthlyTax,
-		NetMonthlyIncome:   netMonthly,
+		GrossMonthlyIncome: Round(grossMonthly, 2),
+		MonthlyIncomeTax:   Round(monthlyTax, 2),
+		NetMonthlyIncome:   Round(netMonthly, 2),
 		CreatedAt:          time.Now(),
 	}
 
