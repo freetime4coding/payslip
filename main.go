@@ -27,6 +27,15 @@ func main() {
 
 	// Route API: Create Payslip (submit data)
     r.POST("/payslip", CreatePayslip)
+
+	// Route API: get all data payslip
+	r.GET("/payslip", GetAllPayslips)
+
+	// Route API: get data By ID
+	r.GET("/payslip/:id", GetPayslipByID)
+	
+	// Route API: delete data By ID
+	r.DELETE("/payslip/:id", DeletePayslip)
     
 	// set the port to run the system
 	r.Run(":3000")
