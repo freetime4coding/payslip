@@ -36,6 +36,9 @@ func main() {
 	
 	// Route API: delete data By ID
 	r.DELETE("/payslip/:id", DeletePayslip)
+
+	// Route API: generate csv list of payslips 
+    r.GET("/payslip/export", ExportCSV)
     
 	// set the port to run the system
 	r.Run(":3000")
