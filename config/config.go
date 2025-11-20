@@ -9,53 +9,67 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-
-	"payslip-system/models"
 )
 
+// Config struct to hold environment configuration
+type Config struct {
+	DBUser     string
+	DBPassword string
+	DBName     string
+	DBHost     string
+	DBPort     string
+}
+
+// Global config variable
+var C *Config
+
+// Global DB connection
 var DB *gorm.DB
 
+// LoadConfig loads environment variables into C
+func LoadConfig() {
+	C = &Config{
+		DBUser:     os.Getenv("DB_USER"),
+		DBPassword: os.Getenv("DB_PASSWORD"),
+		DBName:     os.Getenv("DB_NAME"),
+		DBHost:     os.Getenv("DB_HOST"),
+		DBPort:     os.Getenv("DB_PORT"),
+	}
+
+	if C.DBUser == "" || C.DBPassword == "" || C.DBName == "" || C.DBHost == "" || C.DBPort == "" {
+		log.Fatal("Missing database configuration in environment")
+	}
+}
+
+// InitDB initializes the database connection
 func InitDB() {
-	host := getEnv("DB_HOST", "localhost")
-	port := getEnv("DB_PORT", "5432")
-	user := getEnv("DB_USER", "postgres")
-	password := getEnv("DB_PASSWORD", "postgres")
-	dbname := getEnv("DB_NAME", "payslipdb")
-	sslmode := getEnv("DB_SSLMODE", "disable")
+	// Load config if not already loaded
+	if C == nil {
+		LoadConfig()
+	}
 
 	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=Asia/Jakarta",
-		host, user, password, dbname, port, sslmode,
-	)
-
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags),
-		logger.Config{
-			SlowThreshold: time.Second,
-			LogLevel:      logger.Info,
-			Colorful:      true,
-		},
+		"user=%s password=%s dbname=%s host=%s port=%s sslmode=disable TimeZone=Asia/Jakarta",
+		C.DBUser, C.DBPassword, C.DBName, C.DBHost, C.DBPort,
 	)
 
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: newLogger,
+		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
-		log.Fatalf("[error] failed to initialize database: %v", err)
+		log.Fatalf("[error] failed to initialize database, got error %v", err)
 	}
 
-	err = DB.AutoMigrate(&models.Payslip{})
+	sqlDB, err := DB.DB()
 	if err != nil {
-		log.Fatalf("[error] failed to migrate database: %v", err)
+		log.Fatalf("[error] failed to get database object, got error %v", err)
 	}
 
-	log.Println("✅ Database connected successfully")
-}
+	// Optional: configure connection pool
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
 
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
+	log.Println("[info] database connected successfully")
 }
