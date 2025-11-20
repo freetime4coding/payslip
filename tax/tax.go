@@ -1,4 +1,4 @@
-package main
+package tax
 
 type TaxBracket struct {
     Limit int
